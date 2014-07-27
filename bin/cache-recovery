@@ -4,6 +4,13 @@ require_relative '../lib/cache-recovery'
 require 'nokogiri'
 require 'digest/md5'
 
+unless ARGV.length == 1
+  puts "Usage: cache-recovery <domain-name>"
+  puts "e.g. cache-recovery thehousenews.com"
+  exit 1
+end
+
+site = ARGV[0]
 output_path = "output"
 data_file = "#{output_path}/recovery.json"
 
@@ -11,7 +18,7 @@ if File.exists?(data_file)
   json = File.open(data_file, "r").read
   recovery = CacheRecovery::Recovery.from_json(json)
 else
-  recovery = CacheRecovery::Recovery.new("thehousenews.com")
+  recovery = CacheRecovery::Recovery.new(site)
 end
 
 recovery.start do |recovery, url, page|
