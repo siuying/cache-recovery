@@ -33,24 +33,37 @@ module CacheRecovery
       # find initial set of pages to fetch via site search
       if @links_to_fetch.empty?
         @links_to_fetch += site_search(domain).collect {|item| URI(item[:url])}
-          .select {|uri| uri.path != ""}
+          .select {|uri| uri.path != "" && uri.path != "/" }
           .collect {|uri| uri.to_s }
       end
 
       while link = @links_to_fetch.shift
         unless fetched?(link)
-          result = fetch_cache_page(link)
+          begin
+            result = fetch_cache_page(link)
 
-          @links_fetched << link
+            @links_fetched << link
 
-          # for any links that are not already fetched, we should fetch them
-          if result[:links]
-            result[:links].each do |link|
-              @links_to_fetch.push(link) unless fetched?(link)
+            # for any links that are not already fetched, we should fetch them
+            if result[:links]
+              result[:links].each do |link|
+                @links_to_fetch.push(link) unless fetched?(link)
+              end
+            end
+
+            block.call(self, result[:url], result[:body])
+          rescue Mechanize::ResponseCodeError => e
+            if e.response_code == "404"
+              puts "Link #{link} not found!"
+              @links_not_found << link
+            elsif e.response_code == "503"
+              puts "Service unavailable: #{e}"
+              raise e
+            else
+              puts "Unknown error: #{e}"
+              raise e
             end
           end
-
-          block.call(self, result[:url], result[:body])
         end
 
         sleep sleep_timer
@@ -109,7 +122,9 @@ module CacheRecovery
     #   - links all links extracted from the url, which is from the same domain as url
     #   - body the html of the cached page
     def fetch_cache_page(url)
-      agent = Mechanize.new
+      agent = Mechanize.new { |agent|
+        agent.user_agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:30.0) Gecko/20100101 Firefox/30.0'
+      }
       uri = URI.parse(url)
       if uri.host.start_with?("www.google.com") || uri.host.start_with?("webcache.googleusercontent.com")
         raise "you cannot fetch a google page from google cache! url: #{url}"
