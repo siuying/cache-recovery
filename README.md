@@ -18,7 +18,26 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+run following command:
+
+```
+cache-recovery <domain-to-recovery>
+```
+
+
+To recovery ``thehousenews.com`` articles, run following command
+
+```
+cache-recovery thehousenews.com
+```
+
+The app will then begin recovery. A file ``output/recovery.json`` contains the
+state of recovery (which is used to resume recovery). Any recovered files is
+save as ``output/<md5-url-of-file>``.
+
+## Known Issue
+
+It seems after a while google will detect unusual usage and asked for Captcha.
 
 ## Contributing
 
