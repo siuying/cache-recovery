@@ -35,6 +35,12 @@ The app will then begin recovery. A file ``output/recovery.json`` contains the
 state of recovery (which is used to resume recovery). Any recovered files is
 save as ``output/<md5-url-of-file>``.
 
+## Development
+
+1. Checkout this project.
+2. In the project folder, type ``bundle install`` to install dependencies.
+3. Run ``./bin/cache-recovery thehousenews.com`` to test run the command.
+
 ## Known Issue
 
 It seems after a while google will detect unusual usage and asked for Captcha.

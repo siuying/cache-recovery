@@ -10,7 +10,7 @@ module CacheRecovery
 
     attr_reader :sleep_timer
 
-    def initialize(domain, links_to_fetch=[], links_fetched=[], links_not_found=[], sleep_timer=1)
+    def initialize(domain, links_to_fetch=[], links_fetched=[], links_not_found=[], sleep_timer=2)
       @domain = domain
 
       @links_to_fetch = links_to_fetch
