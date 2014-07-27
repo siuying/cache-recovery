@@ -1,6 +1,4 @@
-require 'google-search'
 require 'mechanize'
-require 'cgi'
 require 'set'
 require 'json'
 
@@ -10,64 +8,11 @@ module CacheRecovery
 
     attr_reader :sleep_timer
 
-    def initialize(domain, links_to_fetch=[], links_fetched=[], links_not_found=[], sleep_timer=2)
+    def initialize(domain)
       @domain = domain
-
-      @links_to_fetch = links_to_fetch
-      @links_fetched = Set.new(links_fetched)
-      @links_not_found = Set.new(links_not_found)
-
-      @sleep_timer = sleep_timer
-    end
-
-    # Start the recovery.
-    #
-    # block - a block with three parameters: recovery(this object), url and body.
-    # To be called each time a page is recovered. e.g. You can persists the page
-    # each time a page is fetched.
-    def start(&block)
-      unless block_given?
-        raise "you must supply a block"
-      end
-
-      # find initial set of pages to fetch via site search
-      if @links_to_fetch.empty?
-        @links_to_fetch += site_search(domain).collect {|item| URI(item[:url])}
-          .select {|uri| uri.path != "" && uri.path != "/" }
-          .collect {|uri| uri.to_s }
-      end
-
-      while link = @links_to_fetch.shift
-        unless fetched?(link)
-          begin
-            result = fetch_cache_page(link)
-
-            @links_fetched << link
-
-            # for any links that are not already fetched, we should fetch them
-            if result[:links]
-              result[:links].each do |link|
-                @links_to_fetch.push(link) unless fetched?(link)
-              end
-            end
-
-            block.call(self, result[:url], result[:body])
-          rescue Mechanize::ResponseCodeError => e
-            if e.response_code == "404"
-              puts "Link #{link} not found!"
-              @links_not_found << link
-            elsif e.response_code == "503"
-              puts "Service unavailable: #{e}"
-              raise e
-            else
-              puts "Unknown error: #{e}"
-              raise e
-            end
-          end
-        end
-
-        sleep sleep_timer
-      end
+      @links_to_fetch = []
+      @links_fetched = []
+      @links_not_found = []
     end
 
     def fetched?(url)
@@ -94,25 +39,15 @@ module CacheRecovery
       end
     end
 
-    # convert this object to a JSON data
-    def to_json
-      data = {
-        :domain => self.domain,
-        :links_to_fetch => self.links_to_fetch,
-        :links_fetched => self.links_fetched.to_a,
-        :links_not_found => self.links_not_found.to_a
-      }
-      JSON.pretty_generate(data)
+    def sorry_url(url)
+      "http://ipv4.google.com/sorry/IndexRedirect?continue=#{cache_url(url)}"
     end
 
-    # create a object from a JSON file created with to_json
-    # json - the json data
-    def self.from_json(json)
-      data = JSON(json)
-      Recovery.new(data["domain"], data["links_to_fetch"], data["links_fetched"], data["links_not_found"])
+    # find the cache URL with a URL
+    # url - the URL string to find cache for
+    def cache_url(url)
+      "http://webcache.googleusercontent.com/search?q=cache:#{CGI.escape(url)}"
     end
-
-    private
 
     # fetch the cached page from google
     # url - the URL to be fetched
@@ -153,12 +88,5 @@ module CacheRecovery
         :body => body
       }
     end
-
-    # find the cache URL with a URL
-    # url - the URL string to find cache for
-    def cache_url(url)
-      "http://www.google.com/search?q=cache:#{CGI.escape(url)}"
-    end
-
   end
 end
