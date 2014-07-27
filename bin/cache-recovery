@@ -1,0 +1,10 @@
+#!/usr/bin/env ruby
+
+require 'json'
+require_relative '../lib/cache-recovery'
+
+list = CacheRecovery::Recovery.list("thehousenews.com")
+
+File.open("output/list.json","w") do |f|
+  f.write(JSON.pretty_generate(list))
+end
